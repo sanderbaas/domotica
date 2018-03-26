@@ -1,148 +1,48 @@
 var ZWave = require('openzwave-shared');
-var os = require('os');
 
 var zwave = new ZWave({
-  ConsoleOutput: true
+  ConsoleOutput: false
 });
 
-zwavedriverpaths = {
-  "darwin": '/dev/cu.usbmodem1411',
-  "linux": '/dev/ttyACM0',
-  "windows": '\\\\.\\COM3'
-}
+zwavedriverpath = '/dev/ttyACM0';
 
-var nodes = [];
-var homeid = null;
-zwave.on('driver ready', function(home_id) {
-  homeid = home_id;
-  console.log('scanning homeid=0x%s...', homeid.toString(16));
-});
-
-zwave.on('driver failed', function() {
-  console.log('failed to start driver');
-  zwave.disconnect();
-  process.exit();
-});
-
-zwave.on('node added', function(nodeid) {
-  nodes[nodeid] = {
-    manufacturer: '',
-    manufacturerid: '',
-    product: '',
-    producttype: '',
-    productid: '',
-    type: '',
-    name: '',
-    loc: '',
-    classes: {},
-    ready: false,
-  };
-});
-
-zwave.on('node event', function(nodeid, data) {
-  console.log('node%d event: Basic set %d', nodeid, data);
-});
-
-zwave.on('value added', function(nodeid, comclass, value) {
-  if (!nodes[nodeid]['classes'][comclass])
-    nodes[nodeid]['classes'][comclass] = {};
-  nodes[nodeid]['classes'][comclass][value.index] = value;
-});
-
-zwave.on('value changed', function(nodeid, comclass, value) {
-  if (nodes[nodeid]['ready']) {
-    console.log('node%d: changed: %d:%s:%s->%s', nodeid, comclass,
-      value['label'],
-      nodes[nodeid]['classes'][comclass][value.index]['value'],
-      value['value']);
-  }
-  nodes[nodeid]['classes'][comclass][value.index] = value;
-});
-
-zwave.on('value removed', function(nodeid, comclass, index) {
-  if (nodes[nodeid]['classes'][comclass] &&
-    nodes[nodeid]['classes'][comclass][index])
-    delete nodes[nodeid]['classes'][comclass][index];
-});
-
-zwave.on('node ready', function(nodeid, nodeinfo) {
-  nodes[nodeid]['manufacturer'] = nodeinfo.manufacturer;
-  nodes[nodeid]['manufacturerid'] = nodeinfo.manufacturerid;
-  nodes[nodeid]['product'] = nodeinfo.product;
-  nodes[nodeid]['producttype'] = nodeinfo.producttype;
-  nodes[nodeid]['productid'] = nodeinfo.productid;
-  nodes[nodeid]['type'] = nodeinfo.type;
-  nodes[nodeid]['name'] = nodeinfo.name;
-  nodes[nodeid]['loc'] = nodeinfo.loc;
-  nodes[nodeid]['ready'] = true;
-  console.log('node%d: %s, %s', nodeid,
-    nodeinfo.manufacturer ? nodeinfo.manufacturer : 'id=' + nodeinfo.manufacturerid,
-    nodeinfo.product ? nodeinfo.product : 'product=' + nodeinfo.productid +
-    ', type=' + nodeinfo.producttype);
-  console.log('node%d: name="%s", type="%s", location="%s"', nodeid,
-    nodeinfo.name,
-    nodeinfo.type,
-    nodeinfo.loc);
-  for (comclass in nodes[nodeid]['classes']) {
-    switch (comclass) {
-      case 0x25: // COMMAND_CLASS_SWITCH_BINARY
-      case 0x26: // COMMAND_CLASS_SWITCH_MULTILEVEL
-        zwave.enablePoll(nodeid, comclass);
-        break;
-    }
-    var values = nodes[nodeid]['classes'][comclass];
-    console.log('node%d: class %d', nodeid, comclass);
-    for (idx in values)
-      console.log('node%d:   %s=%s', nodeid, values[idx]['label'], values[
-        idx]['value']);
-  }
-});
-
-zwave.on('notification', function(nodeid, notif) {
-  switch (notif) {
-    case 0:
-      console.log('node%d: message complete', nodeid);
-      break;
-    case 1:
-      console.log('node%d: timeout', nodeid);
-      break;
-    case 2:
-      console.log('node%d: nop', nodeid);
-      break;
-    case 3:
-      console.log('node%d: node awake', nodeid);
-      break;
-    case 4:
-      console.log('node%d: node sleep', nodeid);
-      break;
-    case 5:
-      console.log('node%d: node dead', nodeid);
-      break;
-    case 6:
-      console.log('node%d: node alive', nodeid);
-      break;
-  }
-});
-
-zwave.on('scan complete', function() {
-  console.log('====> scan complete');
-  // set dimmer node 5 to 50%
-  //    zwave.setValue(5,38,1,0,50);
-  //zwave.setValue({node_id:5,	class_id: 38,	instance:1,	index:0}, 50 );
-  zwave.requestAllConfigParams(3);
-});
-
-zwave.on('controller command', function(n, rv, st, msg) {
-  console.log(
-    'controller commmand feedback: %s node==%d, retval=%d, state=%d', msg,
-    n, rv, st);
-});
-
-console.log("connecting to " + zwavedriverpaths[os.platform()]);
-zwave.connect(zwavedriverpaths[os.platform()]);
+console.log("connecting to " + zwavedriverpath);
+zwave.connect(zwavedriverpath);
 
 process.on('SIGINT', function() {
   console.log('disconnecting...');
-  zwave.disconnect(zwavedriverpaths[os.platform()]);
+  zwave.disconnect(zwavedriverpath);
   process.exit();
 });
+
+zwave.on('value changed', function(nodeid, comclass, value) {
+  if (nodeid==2 && value['label']=='Power') {
+	//var date = Date();
+	console.log('%s %sW', Date(), value['value']);
+  }
+  // zwave.setValue(2, 37,  1,  0,  false); turn off
+  // zwave.setValue(2, 37,  1,  0,  true); turn on
+});
+
+zwave.on('node ready', function(nodeid, nodeinfo){
+  console.log('node ready', nodeid, nodeinfo);
+  //zwave.setNodeOff(nodeid);
+  
+  /*if (nodeid==1) {
+	//zwave.enablePoll(1, 32, 1, 0,1);
+	console.log('addnode?');
+	//zwave.addNode(true);
+	zwave.addNode(false);
+	
+	//zwave.setValue(1, 32,  1,  0,  false);  // node 3: turn on
+  }*/
+});
+
+/*zwave.on('polling enabled/disabled', function(nodeid){
+  console.log('polling enabled/disable', nodeid);	
+})*/
+
+zwave.on('node added', function(nodeid){
+  console.log('node added', nodeid);
+});
+

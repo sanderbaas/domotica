@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "ini-config-parser": "^1.0.3",
+    "node-telegram-bot-api": "^0.30.0",
     "openzwave-shared": "^1.4.1"
   }
 }

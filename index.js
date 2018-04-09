@@ -1,48 +1,124 @@
-var ZWave = require('openzwave-shared');
+const ZWave = require('openzwave-shared');
+const fs = require('fs');
+const TelegramBot = require('node-telegram-bot-api');
+const IniConfigParser = require('ini-config-parser');
 
-var zwave = new ZWave({
-  ConsoleOutput: false
+var file = __dirname + '/config.ini';
+var config = IniConfigParser.Parser().parse(fs.readFileSync(file).toString());
+
+if (!config.global.debug) { config.global.debug = false; }
+if (!config.global.quiet) { config.global.quiet = false; }
+if (!config.global.driver) { config.global.driver = '/dev/ttyACM0'; }
+if (!config.global.running_flag_path) { config.global.running_flag_path = 'laundry_running'; }
+if (!config.global.laundry_done_msg) { config.global.laundry_done_msg = 'Laundry is done!'; }
+if (!config.global.laundry_started_msg) { config.global.laundry_started_msg = 'Laundry has started.'; }
+if (!config.global.controller_id) { config.global.controller_id = 1; }
+if (!config.global.sensor_id) { config.global.sensor_id = 2; }
+if (!config.global.telegram_chat_id) { config.global.telegram_chat_id = false; }
+if (!config.global.telegram_token) { config.global.telegram_token = false; }
+
+const debug = config.global.debug;
+const quiet = config.global.quiet;
+
+const bot = new TelegramBot(config.global.telegram_token, {polling: true});
+
+const zwave = new ZWave({
+    ConsoleOutput: false
 });
 
-zwavedriverpath = '/dev/ttyACM0';
+var connected = false;
+var connecting = false;
+var strikes = 0;
 
-console.log("connecting to " + zwavedriverpath);
-zwave.connect(zwavedriverpath);
+const maxStrikes = config.global.max_strikes;
+const zwavedriverpath = config.global.driver;
+const runningFlagPath = config.global.running_flag_path;
 
 process.on('SIGINT', function() {
-  console.log('disconnecting...');
-  zwave.disconnect(zwavedriverpath);
-  process.exit();
+    if (connected) {
+        connected = false;
+        if (debug) { console.log('disconnecting...'); }
+        zwave.disconnect(zwavedriverpath);
+    }
+    process.exit();
 });
 
+var connectToDriver = function() {
+    fs.access(zwavedriverpath, fs.constants.R_OK, function(err){
+        if (err && connected) {
+            if (!quiet) { console.error('Driver not available, disconnecting...'); }
+            connected = false;
+            zwave.disconnect(zwavedriverpath);
+            process.exit();
+        }
+
+        if (!err && !connected && !connecting) {
+            if (debug) { console.log('Driver available, connecting...'); }
+            connecting = true;
+            zwave.connect(zwavedriverpath);
+        }
+    });
+}
+
+// initially try to connect to driver
+connectToDriver();
+
+// watch availability of driver and connect when available
+fs.watchFile(zwavedriverpath, connectToDriver);
+
 zwave.on('value changed', function(nodeid, comclass, value) {
-  if (nodeid==2 && value['label']=='Power') {
-	//var date = Date();
-	console.log('%s %sW', Date(), value['value']);
-  }
-  // zwave.setValue(2, 37,  1,  0,  false); turn off
-  // zwave.setValue(2, 37,  1,  0,  true); turn on
+    if (connected && nodeid==config.global.sensor_id && value['label']=='Power') {
+        var timestamp = Date();
+        if (debug) {
+            console.log('%s %sW', timestamp, value['value']);
+            console.log('%s strikes', strikes);
+        }
+        var resp = value['value'] + 'W';
+        bot.sendMessage(config.global.telegram_chat_id, resp);
+
+        var laundryIsRunning = false;
+
+        if (value['value'] == 0) {
+            // only increase strikes when laundry has started
+            fs.access(runningFlagPath, fs.constants.R_OK, function(err){
+                if (!err) {
+                    strikes++;
+                    laundryIsRunning = true;
+                }
+            });
+        }
+
+        if (strikes >= maxStrikes) {
+            // three (or more/less) strikes you're out and laundry is done
+            fs.unlink(runningFlagPath, function (err) {
+                if (!quiet) { console.error(err.message); }
+                strikes = 0;
+            });
+
+            var resp = config.global.laundry_done_msg;
+            bot.sendMessage(config.global.telegram_chat_id, resp);
+        }
+
+        // detect wether laundry is running and create flag file
+        if (value['value'] > 0) {
+            fs.writeFile(runningFlagPath, timestamp, function(err) {
+                if (err && !quiet) { console.error(err); }
+            });
+        }
+    }
 });
 
 zwave.on('node ready', function(nodeid, nodeinfo){
-  console.log('node ready', nodeid, nodeinfo);
-  //zwave.setNodeOff(nodeid);
-  
-  /*if (nodeid==1) {
-	//zwave.enablePoll(1, 32, 1, 0,1);
-	console.log('addnode?');
-	//zwave.addNode(true);
-	zwave.addNode(false);
-	
-	//zwave.setValue(1, 32,  1,  0,  false);  // node 3: turn on
-  }*/
+    if (debug) { console.log(nodeinfo); }
+    if (nodeid == config.global.controller_id) {
+        connected = true;
+        connecting = false;
+    }
 });
 
-/*zwave.on('polling enabled/disabled', function(nodeid){
-  console.log('polling enabled/disable', nodeid);	
-})*/
-
-zwave.on('node added', function(nodeid){
-  console.log('node added', nodeid);
+zwave.on('driver failed', function(){
+    if (!quiet) { console.error('Failed to start driver, disconnecting...'); }
+    zwave.disconnect(zwavedriverpath);
+    connecting = false;
+    process.exit();
 });
-

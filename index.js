@@ -90,7 +90,7 @@ zwave.on('value changed', function(nodeid, comclass, value) {
         if (strikes >= maxStrikes) {
             // three (or more/less) strikes you're out and laundry is done
             fs.unlink(runningFlagPath, function (err) {
-                if (!quiet) { console.error(err.message); }
+                if (!quiet && err) { console.error(err.message); }
                 strikes = 0;
             });
 

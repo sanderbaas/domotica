@@ -14,6 +14,7 @@ if (!config.global.laundry_done_msg) { config.global.laundry_done_msg = 'Laundry
 if (!config.global.laundry_started_msg) { config.global.laundry_started_msg = 'Laundry has started.'; }
 if (!config.global.controller_id) { config.global.controller_id = 1; }
 if (!config.global.sensor_id) { config.global.sensor_id = 2; }
+if (!config.global.max_strikes) { config.global.max_strikes = 3; }
 if (!config.global.telegram_chat_id) { config.global.telegram_chat_id = false; }
 if (!config.global.telegram_token) { config.global.telegram_token = false; }
 

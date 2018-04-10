@@ -73,8 +73,6 @@ zwave.on('value changed', function(nodeid, comclass, value) {
             console.log('%s %sW', timestamp, value['value']);
             console.log('%s strikes', strikes);
         }
-        var resp = value['value'] + 'W';
-        bot.sendMessage(config.global.telegram_chat_id, resp);
 
         var laundryIsRunning = false;
 

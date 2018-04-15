@@ -15,6 +15,7 @@ if (!config.global.laundry_started_msg) { config.global.laundry_started_msg = 'L
 if (!config.global.controller_id) { config.global.controller_id = 1; }
 if (!config.global.sensor_id) { config.global.sensor_id = 2; }
 if (!config.global.max_strikes) { config.global.max_strikes = 3; }
+if (!config.global.min_strikes) { config.global.min_strikes = 3; }
 if (!config.global.telegram_chat_id) { config.global.telegram_chat_id = false; }
 if (!config.global.telegram_token) { config.global.telegram_token = false; }
 
@@ -29,9 +30,11 @@ const zwave = new ZWave({
 
 var connected = false;
 var connecting = false;
-var strikes = 0;
+var i_start = 0;
+var i_stop = 0;
 
 const maxStrikes = config.global.max_strikes;
+const minStrikes = config.global.min_strikes;
 const zwavedriverpath = config.global.driver;
 const runningFlagPath = config.global.running_flag_path;
 
@@ -72,7 +75,8 @@ zwave.on('value changed', function(nodeid, comclass, value) {
         var timestamp = Date();
         if (debug) {
             console.log('%s %sW', timestamp, value['value']);
-            console.log('%s strikes', strikes);
+            console.log('%s strikes to start', i_start);
+            console.log('%s strikes to stop', i_stop);
         }
 
         var laundryIsRunning = false;
@@ -81,28 +85,33 @@ zwave.on('value changed', function(nodeid, comclass, value) {
             // only increase strikes when laundry has started
             fs.access(runningFlagPath, fs.constants.R_OK, function(err){
                 if (!err) {
-                    strikes++;
+                    i_stop++;
                     laundryIsRunning = true;
                 }
             });
         }
 
-        if (strikes >= maxStrikes) {
+        // detect wether laundry is running and create flag file
+        if (value['value'] > 0) {
+          i_start++;
+        }
+
+        if (i_start >= minStrikes && !laundryIsRunning) {
+            fs.writeFile(runningFlagPath, timestamp, function(err) {
+                if (err && !quiet) { console.error(err); }
+            });
+        }
+
+        if (i_stop >= maxStrikes) {
             // three (or more/less) strikes you're out and laundry is done
             fs.unlink(runningFlagPath, function (err) {
                 if (!quiet && err) { console.error(err.message); }
-                strikes = 0;
+                i_stop = 0;
+                i_start = 0;
             });
 
             var resp = config.global.laundry_done_msg;
             bot.sendMessage(config.global.telegram_chat_id, resp);
-        }
-
-        // detect wether laundry is running and create flag file
-        if (value['value'] > 0) {
-            fs.writeFile(runningFlagPath, timestamp, function(err) {
-                if (err && !quiet) { console.error(err); }
-            });
         }
     }
 });

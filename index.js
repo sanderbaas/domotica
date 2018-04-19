@@ -89,6 +89,8 @@ zwave.on('value changed', function(nodeid, comclass, value) {
                     laundryIsRunning = true;
                 }
             });
+            // reset start strikes on 0 when not started yet
+            if (!laundryIsRunning) { i_start=0; }
         }
 
         // detect wether laundry is running and create flag file

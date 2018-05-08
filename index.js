@@ -72,7 +72,7 @@ fs.watchFile(zwavedriverpath, connectToDriver);
 
 zwave.on('value changed', function(nodeid, comclass, value) {
     if (connected && nodeid==config.global.sensor_id && value['label']=='Power') {
-        var timestamp = Date();
+        var timestamp = new Date().getTime();
         if (debug) {
             console.log('%s %sW', timestamp, value['value']);
             console.log('%s strikes to start', i_start);
@@ -84,6 +84,7 @@ zwave.on('value changed', function(nodeid, comclass, value) {
 	fs.access(runningFlagPath, fs.constants.R_OK, function(err){
             if (!err) {
                 laundryIsRunning = true;
+                timestamp = parseInt(fs.readFileSync(runningFlagPath).toString());
             }
         });
 

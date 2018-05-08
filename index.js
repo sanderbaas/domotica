@@ -80,17 +80,21 @@ zwave.on('value changed', function(nodeid, comclass, value) {
         }
 
         var laundryIsRunning = false;
+	// if laundry was running and this file restarted, pick it up
+	fs.access(runningFlagPath, fs.constants.R_OK, function(err){
+            if (!err) {
+                laundryIsRunning = true;
+            }
+        });
 
-        if (value['value'] == 0) {
+        if (value['value'] == 0 && laundryIsRunning) {
             // only increase strikes when laundry has started
-            fs.access(runningFlagPath, fs.constants.R_OK, function(err){
-                if (!err) {
-                    i_stop++;
-                    laundryIsRunning = true;
-                }
-            });
+            i_stop++;
+        }
+
+        if (value['value'] == 0 && !laundryIsRunning) {
             // reset start strikes on 0 when not started yet
-            if (!laundryIsRunning) { i_start=0; }
+            i_start=0;
         }
 
         // detect wether laundry is running and create flag file

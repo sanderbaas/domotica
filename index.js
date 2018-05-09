@@ -2,9 +2,11 @@ const ZWave = require('openzwave-shared');
 const fs = require('fs');
 const TelegramBot = require('node-telegram-bot-api');
 const IniConfigParser = require('ini-config-parser');
+const Database = require('better-sqlite3');
 
 var file = __dirname + '/config.ini';
 var config = IniConfigParser.Parser().parse(fs.readFileSync(file).toString());
+var db = new Database('laundry.db');
 
 if (!config.global.debug) { config.global.debug = false; }
 if (!config.global.quiet) { config.global.quiet = false; }
@@ -88,6 +90,15 @@ zwave.on('value changed', function(nodeid, comclass, value) {
             }
         });
 
+        if (laundryIsRunning) {
+            // try to insert into database if not already done
+            var operation = db.prepare('SELECT * FROM operations WHERE timestamp_start=?').get(timestamp);
+            if (!operation) {
+                var insert = db.prepare('INSERT INTO operations VALUES (?,?,?,?)');
+                insert.run(timestamp, null, null, null);
+            }
+        }
+
         if (value['value'] == 0 && laundryIsRunning) {
             // only increase strikes when laundry has started
             i_stop++;
@@ -115,6 +126,13 @@ zwave.on('value changed', function(nodeid, comclass, value) {
                 if (!quiet && err) { console.error(err.message); }
                 i_stop = 0;
                 i_start = 0;
+                var timestamp_done = new Date().getTime();
+                // update database
+                var update = db.prepare('UPDATE operations SET timestamp_done=@timestamp_done WHERE timestamp_start=@timestamp_start;');
+                update.run({
+                    timestamp_start: timestamp,
+                    timestamp_done: timestamp_done
+                });
             });
 
             var resp = config.global.laundry_done_msg;

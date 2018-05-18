@@ -7,7 +7,7 @@ var db = new Database('laundry.db');
 app.use(bodyParser.json());
 
 app.get('/status', function(req, res){
-    var lastOperation = db.prepare('SELECT * FROM operations ORDER BY timestamp_start DESC LIMIT 1;').get();
+    var lastOperation = db.prepare('SELECT * FROM operations ORDER BY timestamp_done DESC LIMIT 1;').get();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(lastOperation));
 });

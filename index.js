@@ -83,12 +83,24 @@ zwave.on('value changed', function(nodeid, comclass, value) {
 
         var laundryIsRunning = false;
 	// if laundry was running and this file restarted, pick it up
-	fs.access(runningFlagPath, fs.constants.R_OK, function(err){
-            if (!err) {
-                laundryIsRunning = true;
-                timestamp = parseInt(fs.readFileSync(runningFlagPath).toString());
+
+	try {
+            fs.accessSync(runningFlagPath, fs.constants.R_OK);
+            laundryIsRunning = true;
+            timestamp = parseInt(fs.readFileSync(runningFlagPath).toString());
+            if (debug) {
+                console.log('read flag path');
             }
-        });
+        } catch (err) {
+            if (debug) {
+                console.error('no flag path to read');
+            }
+        }
+
+
+	if (laundryIsRunning) {
+		console.log('laundry is running');
+	}
 
         if (laundryIsRunning) {
             // try to insert into database if not already done
@@ -112,6 +124,7 @@ zwave.on('value changed', function(nodeid, comclass, value) {
         // detect wether laundry is running and create flag file
         if (value['value'] > 0) {
           i_start++;
+          i_stop = 0;
         }
 
         if (i_start >= minStrikes && !laundryIsRunning) {

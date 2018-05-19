@@ -1,8 +1,12 @@
+const bonjour = require('bonjour')();
 const express = require('express');
 const bodyParser = require('body-parser');
 const Database = require('better-sqlite3');
 const app = express();
 var db = new Database('laundry.db');
+
+// emit bonjour
+bonjour.publish({ name: 'laundry', type: 'http', port: 8124, host: 'http://kelder.implode.nl'});
 
 app.use(bodyParser.json());
 

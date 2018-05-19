@@ -2,11 +2,32 @@ const bonjour = require('bonjour')();
 const express = require('express');
 const bodyParser = require('body-parser');
 const Database = require('better-sqlite3');
+const fs = require('fs');
+const IniConfigParser = require('ini-config-parser');
+
+var file = __dirname + '/config.ini';
+var config = IniConfigParser.Parser().parse(fs.readFileSync(file).toString());
+
+if (!config.global.debug) { config.global.debug = false; }
+if (!config.global.quiet) { config.global.quiet = false; }
+if (!config.global.api_endpoint) { config.global.api_endpoint = 'http://localhost'; }
+if (!config.global.api_port) { config.global.api_port = 8124; }
+
+const debug = config.global.debug;
+const quiet = config.global.quiet;
+
 const app = express();
 var db = new Database('laundry.db');
 
 // emit bonjour
-bonjour.publish({ name: 'laundry', type: 'http', port: 8124, host: 'http://kelder.implode.nl'});
+bonjour.publish({
+    name: 'laundryApi',
+    type: 'http',
+    port: config.global.api_port,
+    txt: {
+        endpoint: config.global.api_endpoint + ':' + config.global.api_port
+    }
+});
 
 app.use(bodyParser.json());
 

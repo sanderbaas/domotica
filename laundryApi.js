@@ -25,7 +25,7 @@ bonjour.publish({
     type: 'http',
     port: config.global.api_port,
     txt: {
-        endpoint: config.global.api_endpoint + ':' + config.global.api_port
+        endpoint: config.global.api_endpoint + ':' + config.global.api_port + '/'
     }
 });
 

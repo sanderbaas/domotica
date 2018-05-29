@@ -1,6 +1,5 @@
 const ZWave = require('openzwave-shared');
 const fs = require('fs');
-const TelegramBot = require('node-telegram-bot-api');
 const IniConfigParser = require('ini-config-parser');
 const Database = require('better-sqlite3');
 
@@ -12,19 +11,13 @@ if (!config.global.debug) { config.global.debug = false; }
 if (!config.global.quiet) { config.global.quiet = false; }
 if (!config.global.driver) { config.global.driver = '/dev/ttyACM0'; }
 if (!config.global.running_flag_path) { config.global.running_flag_path = 'laundry_running'; }
-if (!config.global.laundry_done_msg) { config.global.laundry_done_msg = 'Laundry is done!'; }
-if (!config.global.laundry_started_msg) { config.global.laundry_started_msg = 'Laundry has started.'; }
 if (!config.global.controller_id) { config.global.controller_id = 1; }
 if (!config.global.sensor_id) { config.global.sensor_id = 2; }
 if (!config.global.max_strikes) { config.global.max_strikes = 3; }
 if (!config.global.min_strikes) { config.global.min_strikes = 3; }
-if (!config.global.telegram_chat_id) { config.global.telegram_chat_id = false; }
-if (!config.global.telegram_token) { config.global.telegram_token = false; }
 
 const debug = config.global.debug;
 const quiet = config.global.quiet;
-
-const bot = new TelegramBot(config.global.telegram_token, {polling: true});
 
 const zwave = new ZWave({
     ConsoleOutput: false
@@ -147,9 +140,6 @@ zwave.on('value changed', function(nodeid, comclass, value) {
                     timestamp_done: timestamp_done
                 });
             });
-
-            var resp = config.global.laundry_done_msg;
-            bot.sendMessage(config.global.telegram_chat_id, resp);
         }
     }
 });

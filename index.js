@@ -67,7 +67,7 @@ fs.watchFile(zwavedriverpath, connectToDriver);
 
 zwave.on('value changed', function(nodeid, comclass, value) {
     if (connected && nodeid==config.global.sensor_id && value['label']=='Power') {
-        var timestamp = new Date().getTime();
+        var timestamp = new Date().toString();
         if (debug) {
             console.log('%s %sW', timestamp, value['value']);
             console.log('%s strikes to start', i_start);

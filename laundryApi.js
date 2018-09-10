@@ -32,12 +32,18 @@ bonjour.publish({
 app.use(bodyParser.json());
 
 app.get('/status', function(req, res){
+    if (debug) { console.log(new Date().toString(), req.route.path, req.ip); }
     var lastOperation = db.prepare('SELECT * FROM operations ORDER BY timestamp_done DESC LIMIT 1;').get();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(lastOperation));
 });
 
 app.post('/handle/:timestamp_start', function(req, res){
+    if (debug) {
+        console.log(new Date().toString(),req.params.timestamp_start, req.ip);
+        console.log(new Date().toString(), req.body);
+    }
+
     var operation = db.prepare('SELECT * FROM operations WHERE timestamp_start=?').get(req.params.timestamp_start);
     if (!operation) {
         res.status(404).end();

@@ -5,6 +5,7 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const IniConfigParser = require('ini-config-parser');
 const moment = require('moment');
+var asciichart = require ('asciichart')
 
 var file = __dirname + '/config.ini';
 var config = IniConfigParser.Parser().parse(fs.readFileSync(file).toString());
@@ -70,6 +71,12 @@ app.get('/', function(req, res){
     if (done && handled) {
         res.write('<h1>Laundry is not running</h1>Handled ' + moment(handled).fromNow() + ' by ' + handler + '<p>\r\n');
     }
+
+    var wattages = [];
+    var result = db.prepare('SELECT * FROM wattages ORDER BY timestamp;').all();
+    result.forEach(function(item){ wattages.push(item.wattage); });
+    res.write('<pre>'+ asciichart.plot(wattages) + '</pre>');
+
     res.end('</body></html>');
 });
 

@@ -70,6 +70,12 @@ zwave.on('value changed', function(nodeid, comclass, value) {
         var dt = new Date();
         var timestamp = dt.getTime();
         var timestampStr = dt.toString();
+
+        if (!operation) {
+            var insert = db.prepare('INSERT INTO wattages VALUES (?,?)');
+            insert.run(timestamp, value['value']);
+        }
+
         if (debug) {
             console.log('%s %sW', timestampStr, value['value']);
             console.log('%s strikes to start', i_start);

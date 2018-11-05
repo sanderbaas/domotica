@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const Database = require('better-sqlite3');
 const fs = require('fs');
 const IniConfigParser = require('ini-config-parser');
+const moment = require('moment');
 
 var file = __dirname + '/config.ini';
 var config = IniConfigParser.Parser().parse(fs.readFileSync(file).toString());
@@ -30,6 +31,47 @@ bonjour.publish({
 });
 
 app.use(bodyParser.json());
+
+app.get('/', function(req, res){
+    if (debug) { console.log(new Date().toString(), req.route.path, req.ip); }
+    var lastOperation = db.prepare('SELECT * FROM operations ORDER BY timestamp_start DESC LIMIT 1;').get();
+    var running = lastOperation.timestamp_start && !lastOperation.timestamp_done && !lastOperation.timestamp_handled;
+    var start = new Date(lastOperation.timestamp_start);
+    var prettyStart = start.toDateString() + ' ' + start.toTimeString();
+    var done = false;
+    var prettyDone = false;
+    var handled = false;
+    var prettyHandled = false;
+    var handler = false;
+
+    if (lastOperation.timestamp_done) {
+        done = new Date(lastOperation.timestamp_done);
+        prettyDone = done.toDateString() + ' ' + done.toTimeString();
+    }
+
+    if (lastOperation.timestamp_handled) {
+        handled = new Date(lastOperation.timestamp_handled);
+        prettyHandled = handled.toDateString() + ' ' + handled.toTimeString();
+    }
+
+    if (lastOperation.handler) { handler = lastOperation.handler; }
+
+    res.writeHead(200, {'Content-Type': 'text/html; charset=UTF-8'});
+    res.write('<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" /></head><body>');
+
+    if (running && !done && !handled) {
+        res.write('<h1>Laundry is running</h1><p>Started ' + moment(start).fromNow() + '</p>\r\n');
+    }
+
+    if (!running && done && !handled) {
+        res.write('<h1>Laundry is not running</h1>Finished ' + moment(done).fromNow() + '</p>\r\n');
+    }
+
+    if (!running && done && handled) {
+        res.write('<h1>Laundry is not running</h1>Handled ' + moment(handled).fromNow() + ' by ' + handler + '<p>\r\n');
+    }
+    res.end('</body></html>');
+});
 
 app.get('/status', function(req, res){
     if (debug) { console.log(new Date().toString(), req.route.path, req.ip); }

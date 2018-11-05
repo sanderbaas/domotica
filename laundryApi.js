@@ -57,17 +57,17 @@ app.get('/', function(req, res){
     if (lastOperation.handler) { handler = lastOperation.handler; }
 
     res.writeHead(200, {'Content-Type': 'text/html; charset=UTF-8'});
-    res.write('<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" /></head><body>');
+    res.write('<html><head><title>Laundry</title><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" /></head><body>');
 
-    if (running && !done && !handled) {
+    if (running) {
         res.write('<h1>Laundry is running</h1><p>Started ' + moment(start).fromNow() + '</p>\r\n');
     }
 
-    if (!running && done && !handled) {
+    if (done && !handled) {
         res.write('<h1>Laundry is not running</h1>Finished ' + moment(done).fromNow() + '</p>\r\n');
     }
 
-    if (!running && done && handled) {
+    if (done && handled) {
         res.write('<h1>Laundry is not running</h1>Handled ' + moment(handled).fromNow() + ' by ' + handler + '<p>\r\n');
     }
     res.end('</body></html>');

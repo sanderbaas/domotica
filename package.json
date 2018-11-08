@@ -9,7 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "asciichart": "^1.5.7",
     "better-sqlite3": "^4.1.0",
     "bonjour": "^3.5.0",
     "express": "^4.16.3",

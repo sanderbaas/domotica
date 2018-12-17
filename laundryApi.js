@@ -5,9 +5,6 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const IniConfigParser = require('ini-config-parser');
 const moment = require('moment');
-var asciichart = require ('asciichart')
-const TCharts = require('tcharts.js');
-const { HBar } = TCharts;
 
 var file = __dirname + '/config.ini';
 var config = IniConfigParser.Parser().parse(fs.readFileSync(file).toString());
@@ -74,19 +71,11 @@ app.get('/', function(req, res){
         res.write('<h1>Laundry is not running</h1>Handled ' + moment(handled).fromNow() + ' by ' + handler + '<p>\r\n');
     }
 
-    var wattages = [];
-    var result = db.prepare('SELECT * FROM wattages ORDER BY timestamp DESC LIMIT 30;').all();
-    result.forEach(function(item){
-        wattages.push(parseFloat(item.wattage));
-    });
-
-//    wattages2.push({value:parseFloat(item.wattage)+1, name: 'x'});
-    wattages = wattages.reverse();
-    var lastMin = db.prepare('select avg(wattage) as wattage from wattages where timestamp>(strftime(\'%s\', \'now\')-60)*1000').get();
+    var lastMin = db.prepare('select wattage from wattages order by timestamp limit 1').get();
     var last5Min = db.prepare('select avg(wattage) as wattage from wattages where timestamp>(strftime(\'%s\', \'now\')-300)*1000').get();
     var last15Min = db.prepare('select avg(wattage) as wattage from wattages where timestamp>(strftime(\'%s\', \'now\')-900)*1000').get();
 
-    res.write('load avarage: ' + lastMin.wattage + 'W, ' + last5Min.wattage + 'W, ' + last15Min.wattage + 'W');
+    res.write('load avarage: ' + (lastMin.wattage.toFixed() || 0)  + 'W, ' + (last5Min.wattage.toFixed() || 0) + 'W, ' + (last15Min.wattage.toFixed() || 0) + 'W');
 
     res.end('</body></html>');
 });

@@ -74,6 +74,8 @@ zwave.on('value changed', function(nodeid, comclass, value) {
         if (!operation) {
             var insert = db.prepare('INSERT INTO wattages VALUES (?,?)');
             insert.run(timestamp, value['value']);
+            // only save records of the last 2 weeks
+            var cleanup = db.prepare('DELETE FROM wattages WHERE timestamp<(strftime(\'%s\', \'now\')-1209600)*1000;').run();
         }
 
         if (debug) {

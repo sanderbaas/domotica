@@ -75,7 +75,7 @@ app.get('/', function(req, res){
     var last5Min = db.prepare('select avg(wattage) as wattage from wattages where timestamp>(strftime(\'%s\', \'now\')-300)*1000').get();
     var last15Min = db.prepare('select avg(wattage) as wattage from wattages where timestamp>(strftime(\'%s\', \'now\')-900)*1000').get();
 
-    res.write('load avarage: ' + (lastMin.wattage.toFixed() || 0)  + 'W, ' + (last5Min.wattage.toFixed() || 0) + 'W, ' + (last15Min.wattage.toFixed() || 0) + 'W');
+    res.write('load average: ' + (lastMin.wattage.toFixed() || 0)  + 'W, ' + (last5Min.wattage.toFixed() || 0) + 'W, ' + (last15Min.wattage.toFixed() || 0) + 'W');
 
     res.end('</body></html>');
 });

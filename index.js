@@ -151,7 +151,7 @@ app.get('/', function(req, res){
     if (debug) { console.log(new Date().toString(), req.route.path, req.ip); }
     var lastOperation = db.prepare('SELECT * FROM operations ORDER BY timestamp_start DESC LIMIT 1;').get();
     var running = lastOperation.timestamp_start && !lastOperation.timestamp_done && !lastOperation.timestamp_handled;
-    var wattages = db.prepare('select strftime(\'%H:%M\',timestamp/1000,\'unixepoch\',\'localtime\') as time, wattage from wattages where datetime(timestamp/1000,\'unixepoch\')>datetime(\'now\',\'-4 hours\');').all();
+    var wattages = db.prepare('select strftime(\'%H:%M\',timestamp/1000,\'unixepoch\',\'localtime\') as time, wattage from wattages where datetime(timestamp/1000,\'unixepoch\')>datetime(\'now\',\'-12 hours\');').all();
     var start = new Date(lastOperation.timestamp_start);
     var prettyStart = start.toDateString() + ' ' + start.toTimeString();
     var done = false;
@@ -174,9 +174,18 @@ app.get('/', function(req, res){
 
     var chartLabels = [];
     var chartPoints = [];
+    var i = 0;
+    var batch = [];
     wattages.forEach(function(set) {
-        chartLabels.push(set.time);
-        chartPoints.push(set.wattage);
+        if (i%20>0) {
+            batch.push(parseInt(set.wattage));
+        }
+        if (i%20==0) {
+            chartLabels.push(set.time);
+            chartPoints.push(Math.max.apply(null,batch));
+            batch = [];
+        }
+        i++;
     });
     var status = 'not running';
     var timeString = 'Handled ' + moment(handled).fromNow() + ' by ' + handler;

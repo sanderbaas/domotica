@@ -240,6 +240,6 @@ app.post('/handle/:timestamp_start', function(req, res){
     }
 });
 
-app.listen(8124, function () {
-  console.log('Listening on port 8124');
+app.listen(config.global.api_port, function () {
+  console.log('Listening on port '+config.global.api_port);
 });

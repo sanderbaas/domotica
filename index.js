@@ -13,8 +13,6 @@ if (!config.global.driver) { config.global.driver = '/dev/ttyACM0'; }
 if (!config.global.running_flag_path) { config.global.running_flag_path = 'laundry_running'; }
 if (!config.global.controller_id) { config.global.controller_id = 1; }
 if (!config.global.sensor_id) { config.global.sensor_id = 2; }
-if (!config.global.max_strikes) { config.global.max_strikes = 3; }
-if (!config.global.min_strikes) { config.global.min_strikes = 3; }
 
 const debug = config.global.debug;
 const quiet = config.global.quiet;
@@ -25,11 +23,7 @@ const zwave = new ZWave({
 
 var connected = false;
 var connecting = false;
-var i_start = 0;
-var i_stop = 0;
 
-const maxStrikes = config.global.max_strikes;
-const minStrikes = config.global.min_strikes;
 const zwavedriverpath = config.global.driver;
 const runningFlagPath = config.global.running_flag_path;
 
@@ -71,17 +65,13 @@ zwave.on('value changed', function(nodeid, comclass, value) {
         var timestamp = dt.getTime();
         var timestampStr = dt.toString();
 
-        if (!operation) {
-            var insert = db.prepare('INSERT INTO wattages VALUES (?,?)');
-            insert.run(timestamp, value['value']);
-            // only save records of the last 2 weeks
-            var cleanup = db.prepare('DELETE FROM wattages WHERE timestamp<(strftime(\'%s\', \'now\')-1209600)*1000;').run();
-        }
+        var insert = db.prepare('INSERT INTO wattages VALUES (?,?)');
+        insert.run(timestamp, value['value']);
+        // only save records of the last 2 weeks
+        var cleanup = db.prepare('DELETE FROM wattages WHERE timestamp<(strftime(\'%s\', \'now\')-1209600)*1000;').run();
 
         if (debug) {
             console.log('%s %sW', timestampStr, value['value']);
-            console.log('%s strikes to start', i_start);
-            console.log('%s strikes to stop', i_stop);
         }
 
         var laundryIsRunning = false;
@@ -91,18 +81,15 @@ zwave.on('value changed', function(nodeid, comclass, value) {
             fs.accessSync(runningFlagPath, fs.constants.R_OK);
             laundryIsRunning = true;
             timestamp = parseInt(fs.readFileSync(runningFlagPath).toString());
-            if (debug) {
-                console.log('%s read flag path', timestampStr);
-            }
         } catch (err) {
             if (debug) {
-                console.error('%s no flag path to read', timestampStr);
+                console.error('%s no flag file to read', timestampStr);
             }
         }
 
 
 	if (laundryIsRunning) {
-		console.log('%s laundry is running', timestampStr);
+            console.log('%s laundry is running', timestampStr);
 	}
 
         if (laundryIsRunning) {
@@ -114,34 +101,15 @@ zwave.on('value changed', function(nodeid, comclass, value) {
             }
         }
 
-        if (value['value'] == 0 && laundryIsRunning) {
-            // only increase strikes when laundry has started
-            i_stop++;
-        }
-
-        if (value['value'] == 0 && !laundryIsRunning) {
-            // reset start strikes on 0 when not started yet
-            i_start=0;
-        }
-
-        // detect wether laundry is running and create flag file
-        if (value['value'] > 0) {
-          i_start++;
-          i_stop = 0;
-        }
-
-        if (i_start >= minStrikes && !laundryIsRunning) {
+        if (value['value'] > 2 && !laundryIsRunning) {
             fs.writeFile(runningFlagPath, timestamp, function(err) {
                 if (err && !quiet) { console.error(err); }
             });
         }
 
-        if (i_stop >= maxStrikes) {
-            // three (or more/less) strikes you're out and laundry is done
+        if (value['value'] == 0 && laundryIsRunning) {
             fs.unlink(runningFlagPath, function (err) {
                 if (!quiet && err) { console.error(err.message); }
-                i_stop = 0;
-                i_start = 0;
                 var timestamp_done = new Date().getTime();
                 // update database
                 var update = db.prepare('UPDATE operations SET timestamp_done=@timestamp_done WHERE timestamp_start=@timestamp_start;');

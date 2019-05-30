@@ -10,10 +10,9 @@
   "license": "ISC",
   "dependencies": {
     "better-sqlite3": "^4.1.0",
-    "bonjour": "^3.5.0",
     "express": "^4.16.3",
     "ini-config-parser": "^1.0.3",
     "moment": "^2.22.2",
-    "openzwave-shared": "^1.4.1"
+    "openzwave-shared": "^1.4.7"
   }
 }

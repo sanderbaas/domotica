@@ -1,4 +1,3 @@
-const bonjour = require('bonjour')();
 const express = require('express');
 const bodyParser = require('body-parser');
 const Database = require('better-sqlite3');
@@ -19,16 +18,6 @@ const quiet = config.global.quiet;
 
 const app = express();
 var db = new Database('laundry.db');
-
-// emit bonjour
-bonjour.publish({
-    name: 'laundryApi',
-    type: 'http',
-    port: config.global.api_port,
-    txt: {
-        endpoint: config.global.api_endpoint + ':' + config.global.api_port + '/'
-    }
-});
 
 app.use(bodyParser.json());
 

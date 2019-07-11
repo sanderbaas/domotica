@@ -31,6 +31,9 @@ const zwave = new ZWave({
 var connected = false;
 var connecting = false;
 
+var countStart = 0;
+var countStop = 0;
+
 const zwavedriverpath = config.global.driver;
 const runningFlagPath = config.global.running_flag_path;
 
@@ -108,13 +111,23 @@ zwave.on('value changed', function(nodeid, comclass, value) {
             }
         }
 
-        if (value['value'] > 2 && !laundryIsRunning) {
+        if (value['value'] > 0 && !laundryIsRunning) {
+            countStart++;
+        }
+
+        if (countStart>1) {
+            countStart=0;
             fs.writeFile(runningFlagPath, timestamp, function(err) {
                 if (err && !quiet) { console.error(err); }
             });
         }
 
         if (value['value'] == 0 && laundryIsRunning) {
+            countStop++;
+        }
+
+        if (countStop>1) {
+            countStop=0;
             fs.unlink(runningFlagPath, function (err) {
                 if (!quiet && err) { console.error(err.message); }
                 var timestamp_done = new Date().getTime();

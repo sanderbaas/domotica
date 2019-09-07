@@ -113,10 +113,12 @@ zwave.on('value changed', function(nodeid, comclass, value) {
 
         if (value['value'] > 0 && !laundryIsRunning) {
             countStart++;
+            countStop=0;
         }
 
         if (countStart>1) {
             countStart=0;
+            countStop=0;
             fs.writeFile(runningFlagPath, timestamp, function(err) {
                 if (err && !quiet) { console.error(err); }
             });
@@ -124,10 +126,16 @@ zwave.on('value changed', function(nodeid, comclass, value) {
 
         if (value['value'] == 0 && laundryIsRunning) {
             countStop++;
+            countStart = 0;
+        }
+
+	if (value['value'] == 0 && !laundryIsRunning) {
+            countStart = 0;
         }
 
         if (countStop>1) {
             countStop=0;
+            countStart=0;
             fs.unlink(runningFlagPath, function (err) {
                 if (!quiet && err) { console.error(err.message); }
                 var timestamp_done = new Date().getTime();

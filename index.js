@@ -70,6 +70,13 @@ connectToDriver();
 fs.watchFile(zwavedriverpath, connectToDriver);
 
 zwave.on('value changed', function(nodeid, comclass, value) {
+    if (debug) {
+	console.log('connected', connected);
+	console.log('noideid', nodeid);
+	console.log('valudId', value);
+	console.log('value label', value['label']);
+	console.log('value changed', value);
+    }
     if (connected && nodeid==config.global.sensor_id && value['label']=='Power') {
         var dt = new Date();
         var timestamp = dt.getTime();
@@ -155,6 +162,10 @@ zwave.on('node ready', function(nodeid, nodeinfo){
     if (nodeid == config.global.controller_id) {
         connected = true;
         connecting = false;
+    }
+    if (nodeid == config.global.sensor_id) {
+	// enable poll
+	zwave.enablePoll(nodeid,50,1,0,1);
     }
 });
 

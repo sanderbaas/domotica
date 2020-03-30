@@ -4,3 +4,7 @@ package-lock.json
 config.ini
 laundry_running
 *.db
+options.xml
+zwscene.xml
+zwcfg*.xml
+ozwcache*.xml

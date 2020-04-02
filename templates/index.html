@@ -19,6 +19,8 @@ var myChart = new Chart(ctx, {
         labels: [{{#chartLabels}}'{{.}}',{{/chartLabels}}],
         datasets: [{
 	    label: 'Watt',
+            backgroundColor: '#aed4e6',
+            borderWidth: 1,
             data: [{{chartPoints}}]
         }]
     }, 
@@ -29,9 +31,14 @@ var myChart = new Chart(ctx, {
             point: {
                 radius:0
             },
-            line: {
-                backgroundColor: '#ccc'
-            }
+        },
+        scales: {
+            yAxis: [{
+                ticks: {
+                    suggestedMin:0,
+                    suggestedMax:2500
+                }
+            }]
         }
     }
 });

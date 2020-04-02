@@ -220,7 +220,10 @@ app.get('/', function(req, res){
         i++;
     });
     var status = 'not running';
-    var timeString = 'Handled ' + moment(handled).fromNow() + ' by ' + handler;
+    var timeString = '';
+    if (handled) {
+      timeString = 'Handled ' + moment(handled).fromNow() + ' by ' + handler;
+    }
 
     if (running) {
         status = 'running';

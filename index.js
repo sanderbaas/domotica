@@ -17,6 +17,9 @@ if (!config.global.driver) { config.global.driver = '/dev/ttyACM0'; }
 if (!config.global.running_flag_path) { config.global.running_flag_path = 'laundry_running'; }
 if (!config.global.controller_id) { config.global.controller_id = 1; }
 if (!config.global.sensor_id) { config.global.sensor_id = 2; }
+if (!config.global.sensor_instance) { config.global.sensor_instance = 1; }
+if (!config.global.sensor_index) { config.global.sensor_index = 2; }
+if (!config.global.sensor_class_id) { config.global.sensor_class_id = 50; }
 if (!config.global.api_endpoint) { config.global.api_endpoint = 'http://localhost'; }
 if (!config.global.api_port) { config.global.api_port = 8124; }
 
@@ -77,7 +80,11 @@ zwave.on('value changed', function(nodeid, comclass, value) {
 	console.log('value label', value['label']);
 	console.log('value changed', value);
     }
-    if (connected && nodeid==config.global.sensor_id && value['label']=='Power') {
+    if (connected
+	&& nodeid==config.global.sensor_id
+	&& comclass==config.global.sensor_class_id
+	&& value['instance']==config.global.sensor_instance
+	&& value['index']==config.global.sensor_index) {
         var dt = new Date();
         var timestamp = dt.getTime();
         var timestampStr = dt.toString();
@@ -165,7 +172,12 @@ zwave.on('node ready', function(nodeid, nodeinfo){
     }
     if (nodeid == config.global.sensor_id) {
 	// enable poll
-	zwave.enablePoll(nodeid,50,1,0,1);
+	zwave.enablePoll(
+		nodeid,
+		config.global.sensor_class_id,
+		config.global.sensor_instance,
+		config.global.sensor_index
+	);
     }
 });
 

@@ -130,6 +130,10 @@ zwave.on('value changed', function(nodeid, comclass, value) {
             countStop=0;
         }
 
+	if (value['value'] > 0 && laundryIsRunning) {
+	    countStop = 0;
+	}
+
         if (countStart>1) {
             countStart=0;
             countStop=0;
@@ -256,6 +260,8 @@ app.get('/', function(req, res){
     var html = mustache.to_html(page, rData); // replace all of the data
     res.send(html); // send to client
 });
+
+app.use('/static', express.static('assets'));
 
 app.get('/status', function(req, res){
     if (debug) { console.log(new Date().toString(), req.route.path, req.ip); }

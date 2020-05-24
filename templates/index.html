@@ -23,7 +23,7 @@
 <body>
 <h2>Laundry is {{status}}</h2>
 <p>{{timeString}}</p>
-<div class="chart-container" style="position: relative; height: 80vh; width:90vw">
+<div class="chart-container" style="position: relative; height: 90vh; width:90vw">
     <canvas id="chart"></canvas>
 </div>
 <script>
@@ -48,7 +48,7 @@ var myChart = new Chart(ctx, {
             },
         },
         scales: {
-            yAxis: [{
+            yAxes: [{
                 ticks: {
                     min:0,
                     max:2500

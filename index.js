@@ -86,10 +86,8 @@ zwave.on('value changed', function(nodeid, comclass, value) {
     if (debug) {
 	console.log('connected', connected);
 	console.log('noideid', nodeid);
-	console.log('valudId', value);
-	console.log('value label', value['label']);
-	console.log('value changed', value);
     }
+
     if (connected
 	&& nodeid==config.global.sensor_id
 	&& comclass==config.global.sensor_class_id
@@ -156,16 +154,28 @@ zwave.on('value changed', function(nodeid, comclass, value) {
 	    });
         }
 
-        if (value['value'] > 0 && !laundryIsRunning) {
+        if (value['value'] > 7 && !laundryIsRunning) {
+            if (debug) {
+              console.log('wattage > 7, increase start, stop -> 0');
+            }
+
             countStart++;
             countStop=0;
         }
 
-	if (value['value'] > 0 && laundryIsRunning) {
+	if (value['value'] > 7 && laundryIsRunning) {
+            if (debug) { 
+              console.log('wattage > 7, stop -> 0');
+            }
+
 	    countStop = 0;
 	}
 
-        if (countStart>1) {
+        if (countStart > 2) {
+            if (debug) { 
+              console.log('countStart > 2, mark laundry as started');
+            }
+
             countStart=0;
             countStop=0;
             fs.writeFile(runningFlagPath, timestamp, function(err) {
@@ -173,16 +183,28 @@ zwave.on('value changed', function(nodeid, comclass, value) {
             });
         }
 
-        if (value['value'] == 0 && laundryIsRunning) {
+        if (value['value'] < 6 && laundryIsRunning) {
+            if (debug) { 
+              console.log('wattage < 6, increase stop, start -> 0');
+            }
+
             countStop++;
             countStart = 0;
         }
 
-	if (value['value'] == 0 && !laundryIsRunning) {
+	if (value['value'] < 6 && !laundryIsRunning) {
+            if (debug) { 
+              console.log('wattage < 6, start -> 0');
+            }
+
             countStart = 0;
         }
 
-        if (countStop>1) {
+        if (countStop>2) {
+            if (debug) { 
+              console.log('countStop > 2, mark laundry as done');
+            }
+
             countStop=0;
             countStart=0;
             fs.unlink(runningFlagPath, function (err) {

@@ -15,7 +15,6 @@
     "ini-config-parser": "^1.0.3",
     "moment": "^2.22.2",
     "mustache": "^3.0.1",
-    "mysql": "^2.18.1",
     "openzwave-shared": "^1.6.2"
   }
 }

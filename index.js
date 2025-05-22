@@ -6,7 +6,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const moment = require('moment');
 const mustache = require('mustache');
-const mysql = require('mysql');
 
 var file = __dirname + '/config.ini';
 var config = IniConfigParser.Parser().parse(fs.readFileSync(file).toString());
@@ -40,15 +39,6 @@ var countStop = 0;
 
 const zwavedriverpath = config.global.driver;
 const runningFlagPath = config.global.running_flag_path;
-
-var connection = mysql.createConnection({
-  host     : config.global.mysql_host,
-  user     : config.global.mysql_user,
-  password : config.global.mysql_pass,
-  database : config.global.mysql_db,
-});
-
-connection.connect();
 
 process.on('SIGINT', function() {
     if (connected) {
@@ -107,11 +97,6 @@ zwave.on('value changed', function(nodeid, comclass, value) {
         // only save records of the last 2 weeks
         var cleanup = db.prepare('DELETE FROM wattages WHERE timestamp<(strftime(\'%s\', \'now\')-1209600)*1000;').run();
 
-	var post = {measured_at: mysql.raw('NOW()'), wattage: value['value']};
-	connection.query('INSERT INTO laundry_measurements SET ?', post, function(error, results, fields){
-	    if (error) { throw error; }
-	});
-
         if (debug) {
             console.log('%s %sW', timestampStr, value['value']);
         }
@@ -143,15 +128,6 @@ zwave.on('value changed', function(nodeid, comclass, value) {
                 var insert = db.prepare('INSERT INTO operations VALUES (?,?,?,?)');
                 insert.run(timestamp, null, null, null);
             }
-	    var post = {started_at: mysql.raw('from_unixtime('+timestamp2+')')};
-	    connection.query('SELECT * FROM laundry_operations WHERE ?',post, function (error, results, fields) {
-	        if (results.length==0) {
-                    var post = {started_at: mysql.raw('from_unixtime('+timestamp2+')')};
-                    connection.query('INSERT INTO laundry_operations SET ?', post, function(error, results, fields){
-                        if (error) { throw error; }
-                    });
-                }
-	    });
         }
 
         if (value['value'] > 7 && !laundryIsRunning) {
@@ -216,13 +192,6 @@ zwave.on('value changed', function(nodeid, comclass, value) {
                     timestamp_start: timestamp,
                     timestamp_done: timestamp_done
                 });
-		var post = [
-		    mysql.raw('from_unixtime('+timestamp_done+'/1000)'),
-                    mysql.raw('from_unixtime('+timestamp2+')')
-                ];
-                connection.query('UPDATE laundry_operations SET finished_at = ? WHERE started_at = ?', post, function(error, results, fields){
-                    if (error) { throw error; }
-                });
             });
         }
     }
@@ -250,7 +219,6 @@ zwave.on('driver failed', function(){
     zwave.disconnect(zwavedriverpath);
     connecting = false;
     process.exit();
-    connection.destroy();
 });
 
 // API
@@ -356,17 +324,6 @@ app.post('/handle/:timestamp_start', function(req, res){
         });
 
 	var timestamp2 = parseInt(req.params.timestamp_start/1000);
-
-	var post = [
-            mysql.raw('from_unixtime('+timestamp_handled+'/1000)'),
-            req.body.handler,
-            mysql.raw('from_unixtime('+timestamp2+')')
-        ];
-        connection.query('UPDATE laundry_operations SET handled_at = ?, handled_by = ? WHERE started_at = ?', post, function(error, results, fields){
-            if (error) {
-		console.error(error);
-            }
-        });
 
         if (result) {
             res.status(200).end();

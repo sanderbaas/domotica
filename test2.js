@@ -7,7 +7,7 @@ var zwave = new ZWave({
 
 zwavedriverpaths = {
   "darwin": '/dev/cu.usbmodem1411',
-  "linux": '/dev/ttyACM0',
+  "linux": '/dev/ttyACM1',
   "windows": '\\\\.\\COM3'
 }
 
